@@ -1,3 +1,14 @@
+# Custom data
+vocab
+create_sample_data.py
+test
+huggingface_datasets
+data
+sample.txt
+saved_data
+small_model
+test_dataset.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
