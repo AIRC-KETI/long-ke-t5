@@ -1,5 +1,7 @@
 # Custom data
-vocab
+vocab/*.py
+vocab/*.txt
+vocab/ko_en/SentencePieceBPETokenizer
 create_sample_data.py
 test
 huggingface_datasets
