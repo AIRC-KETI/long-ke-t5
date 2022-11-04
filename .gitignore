@@ -10,6 +10,16 @@ sample.txt
 saved_data
 small_model
 test_dataset.py
+test_data.py
+downstreams/ke-t5-small-summarization_lre-3
+downstreams/ke-t5-small-translation_lre-3
+downstreams/long-ke-t5-small-summarization_lre-3
+downstreams/long-ke-t5-small-translation_lre-3
+downstreams/datasets
+saved_data_cnt
+saved_data_sorted
+test_sampler.py
+push_to_hf_hub.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

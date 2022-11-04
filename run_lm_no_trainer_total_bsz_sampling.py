@@ -60,6 +60,78 @@ from transformers.optimization import Adafactor
 from transformers.utils import check_min_version, get_full_repo_name, send_example_telemetry
 from transformers.utils.versions import require_version
 
+from typing import Optional
+import torch.distributed as dist
+from torch.utils.data import Sampler, Dataset
+
+def split_n_parts(a, n):
+    k, m = divmod(len(a), n)
+    return (a[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n))
+
+class RandomBatchSampler(Sampler):
+    def __init__(
+        self, 
+        dataset: Dataset, 
+        batch_size:int,  # batch per process
+        num_processes: Optional[int] = None,
+        shuffle: bool = True,
+        drop_last: bool = False) -> None:
+
+        self.dataset = dataset
+        self.num_processes = num_processes
+        self.batch_size = batch_size
+        self.total_batch_size = batch_size * num_processes
+        self.shuffle = shuffle
+        self.drop_last = drop_last
+        self.total_size = len(dataset)
+
+        # calc number of bathces
+        if self.total_size % self.total_batch_size == 0:
+            self.num_total_batches = self.total_size // self.total_batch_size
+        else:
+            length = self.total_size // self.total_batch_size
+            self.num_total_batches =  length if self.drop_last else length + 1
+
+        self.num_batches = self.num_total_batches * num_processes
+
+    def __iter__(self):
+
+        range_total = list(range(self.total_size))
+        
+        _remainder = self.total_size%self.total_batch_size
+        padding_size = self.total_batch_size - _remainder
+        if not self.drop_last:
+            range_total += range_total[-padding_size:]
+        else:
+            range_total = range_total[:-_remainder]
+
+        range_total_chunked = [
+            range_total[i:i + self.total_batch_size] 
+                for i in range(
+                    0, 
+                    self.total_size, 
+                    self.total_batch_size
+                    )
+            ]
+
+        if self.shuffle:
+            # deterministically shuffle based on epoch and seed
+            g = torch.Generator()
+            batch_indices = torch.randperm(self.num_total_batches, generator=g).tolist()  # type: ignore[arg-type]
+        else:
+            batch_indices = list(range(self.num_total_batches))  # type: ignore[arg-type]
+
+        
+        assert len(batch_indices) == len(range_total_chunked), f"len(batch_indices):[{len(batch_indices)}] == len(range_total_chunked):[{len(range_total_chunked)}]"
+        assert self.num_total_batches == len(range_total_chunked), f"self.num_total_batches:[{self.num_total_batches}] == len(range_total_chunked):[{len(range_total_chunked)}]"
+
+        batched_indices = [batch for idx in batch_indices for batch in list(split_n_parts(range_total_chunked[idx], self.num_processes))]
+
+        return iter(batched_indices)
+
+    def __len__(self) -> int:
+        return self.num_batches
+
 
 logger = get_logger(__name__)
 
@@ -311,67 +383,6 @@ def main():
     if args.seed is not None:
         set_seed(args.seed)
 
-    # Handle the repository creation
-    if accelerator.is_main_process:
-        if args.output_dir is not None:
-            os.makedirs(args.output_dir, exist_ok=True)
-    accelerator.wait_for_everyone()
-
-    skip_data_preprocessing = (args.save_dataset_to_disk is not None and os.path.isdir(args.save_dataset_to_disk))
-
-    if not skip_data_preprocessing:
-        with accelerator.main_process_first():
-            # Downloading and loading a dataset from the hub.
-            raw_datasets_1st = load_dataset(
-                args.dataset_name, 
-                args.dataset_config_name,
-                cache_dir=args.hf_cache_dir, 
-                data_dir=args.hf_data_dir1,
-                keep_in_memory=args.keep_in_memory,
-                )
-            if "validation" not in raw_datasets_1st.keys():
-                raw_datasets_1st["validation"] = load_dataset(
-                    args.dataset_name,
-                    args.dataset_config_name,
-                    split=f"train[:{args.validation_split_percentage}%]",
-                    cache_dir=args.hf_cache_dir, 
-                    data_dir=args.hf_data_dir1,
-                    keep_in_memory=args.keep_in_memory,
-                )
-                raw_datasets_1st["train"] = load_dataset(
-                    args.dataset_name,
-                    args.dataset_config_name,
-                    split=f"train[{args.validation_split_percentage}%:]",
-                    cache_dir=args.hf_cache_dir, 
-                    data_dir=args.hf_data_dir1,
-                    keep_in_memory=args.keep_in_memory,
-                )
-            
-            raw_datasets_2nd = load_dataset(
-                args.dataset_name, 
-                args.dataset_config_name,
-                cache_dir=args.hf_cache_dir, 
-                data_dir=args.hf_data_dir2,
-                keep_in_memory=args.keep_in_memory,
-                )
-            if "validation" not in raw_datasets_2nd.keys():
-                raw_datasets_2nd["validation"] = load_dataset(
-                    args.dataset_name,
-                    args.dataset_config_name,
-                    split=f"train[:{args.validation_split_percentage}%]",
-                    cache_dir=args.hf_cache_dir, 
-                    data_dir=args.hf_data_dir2,
-                    keep_in_memory=args.keep_in_memory,
-                )
-                raw_datasets_2nd["train"] = load_dataset(
-                    args.dataset_name,
-                    args.dataset_config_name,
-                    split=f"train[{args.validation_split_percentage}%:]",
-                    cache_dir=args.hf_cache_dir, 
-                    data_dir=args.hf_data_dir2,
-                    keep_in_memory=args.keep_in_memory,
-                )
-    
 
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
@@ -411,78 +422,16 @@ def main():
     model.resize_token_embeddings(len(tokenizer))
 
 
-    if not skip_data_preprocessing:
-        # preprocessing func
-        # no_bathced
-        def get_gsg_preproc_func(example, gsg_type, sent_mask_token_id):
-            # remove eos token
-            eos_token_id = tokenizer.eos_token_id
-            input_ids = tokenizer(example["text"]).input_ids
-            gsg_info = example[gsg_type]
-
-            inp, tgt = [], []
-            for gsg, tokens in zip(gsg_info, input_ids):
-                if tokens[-1] == eos_token_id:
-                    tokens = tokens[:-1]
-                if gsg:
-                    inp.extend([sent_mask_token_id])
-                    tgt.extend(tokens)
-                else:
-                    inp.extend(tokens)
-                    
-            inp.append(eos_token_id)
-            tgt.append(eos_token_id)
-
-            example["input_ids"] = inp[:args.block_size]
-            example["attention_mask"] = [1] * min(len(inp), args.block_size)
-            example["labels"] = tgt[:(args.block_size//2)]
-            example["decoder_attention_mask"] = [1] * min(len(tgt), (args.block_size//4))
-            return example
-
-        preproc_func = functools.partial(
-            get_gsg_preproc_func, 
-            gsg_type=args.gsg_type, 
-            sent_mask_token_id=tokenizer.additional_special_tokens_ids[0]
+    # load dataset
+    raw_datasets_1st = load_from_disk(
+            args.save_dataset_to_disk,
+            keep_in_memory=args.keep_in_memory,
         )
 
-        column_names = raw_datasets_1st["train"].column_names
-        #if "text" in column_names:
-        #    column_names.remove("text")
+    column_names = raw_datasets_1st["train"].column_names
+    if "input_length" in column_names:
+        raw_datasets_1st = raw_datasets_1st.remove_columns(["input_length"])
         
-        with accelerator.main_process_first():
-            raw_datasets_1st = raw_datasets_1st.map(
-                preproc_func,
-                batched=False,
-                num_proc=args.preprocessing_num_workers,
-                remove_columns=column_names,
-                load_from_cache_file=not args.overwrite_cache,
-                desc="Running tokenizer on dataset",
-            )
-
-            raw_datasets_2nd = raw_datasets_2nd.map(
-                preproc_func,
-                batched=False,
-                num_proc=args.preprocessing_num_workers,
-                remove_columns=column_names,
-                load_from_cache_file=not args.overwrite_cache,
-                desc="Running tokenizer on dataset",
-            )
-        
-
-        raw_datasets_1st["train"] = datasets.interleave_datasets([raw_datasets_1st["train"], raw_datasets_2nd["train"]])
-        raw_datasets_1st["validation"]= datasets.interleave_datasets([raw_datasets_1st["validation"], raw_datasets_2nd["validation"]])
-
-    if accelerator.is_local_main_process and not skip_data_preprocessing:
-        if args.save_dataset_to_disk is not None:
-            raw_datasets_1st.save_to_disk(args.save_dataset_to_disk)
-    accelerator.wait_for_everyone()
-    
-    if skip_data_preprocessing:
-        raw_datasets_1st = load_from_disk(
-                args.save_dataset_to_disk,
-                keep_in_memory=args.keep_in_memory,
-            )
-
     train_dataset = raw_datasets_1st["train"]
     eval_dataset = raw_datasets_1st["validation"]
 
@@ -547,9 +496,17 @@ def main():
         logger.info("input_ids: {}\n".format(tokenizer.decode(item["input_ids"])))
         logger.info("labels: {}\n".format(tokenizer.decode(item["labels"])))
 
+    # create total batch size level random sampler for train_dataloader
+    # Random sampling in units of total batch size.
+    train_batchsampler = RandomBatchSampler(
+            train_dataset, 
+            batch_size=args.per_device_train_batch_size,
+            num_processes=accelerator.num_processes, 
+        )
+
     # DataLoaders creation:
     train_dataloader = DataLoader(
-        train_dataset, shuffle=True, collate_fn=data_collator, batch_size=args.per_device_train_batch_size
+        train_dataset, batch_sampler=train_batchsampler, collate_fn=data_collator
     )
     eval_dataloader = DataLoader(
         eval_dataset, collate_fn=data_collator, batch_size=args.per_device_eval_batch_size
@@ -669,8 +626,6 @@ def main():
     # update the progress_bar if load from checkpoint
     progress_bar.update(starting_epoch * num_update_steps_per_epoch)
     completed_steps = starting_epoch * num_update_steps_per_epoch
-
-    max_size = 0
 
     for epoch in range(starting_epoch, args.num_train_epochs):
         model.train()
