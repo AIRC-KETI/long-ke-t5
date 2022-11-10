@@ -60,13 +60,61 @@ from transformers.optimization import Adafactor
 from transformers.utils import check_min_version, get_full_repo_name, send_example_telemetry
 from transformers.utils.versions import require_version
 
-from typing import Optional
+from typing import Optional, Sized
 import torch.distributed as dist
-from torch.utils.data import Sampler, Dataset
+from torch.utils.data import Sampler, BatchSampler, Dataset
 
 def split_n_parts(a, n):
     k, m = divmod(len(a), n)
     return (a[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n))
+
+class RandomTotalBSZSampler(Sampler):
+    def __init__(
+            self, 
+            data_source: Optional[Sized],
+            batch_size: int,
+            num_processes: int,
+            shuffle: bool=True,
+        ) -> None:
+        super().__init__(data_source)
+        self.data_source = data_source
+
+        self.num_processes = num_processes
+        self.batch_size = batch_size
+        self.total_batch_size = batch_size * num_processes
+        self.shuffle = shuffle
+
+        self.total_size = len(self.data_source)
+        self.num_total_batches = self.total_size // self.total_batch_size
+        self.num_total_batch_idx = self.num_total_batches * self.total_batch_size
+
+    def __iter__(self):
+
+        range_total = list(range(self.total_size))
+        range_total_chunked = [
+            range_total[i:i + self.total_batch_size] 
+                for i in range(
+                    0, 
+                    self.total_size, 
+                    self.total_batch_size
+                    )
+            ]
+
+        if self.shuffle:
+            # deterministically shuffle based on epoch and seed
+            g = torch.Generator()
+            batch_indices = torch.randperm(self.num_total_batches, generator=g).tolist()  # type: ignore[arg-type]
+        else:
+            batch_indices = list(range(self.num_total_batches))  # type: ignore[arg-type]
+
+        sample_indices = [sample for idx in batch_indices for sample in range_total_chunked[idx]]
+        if self.total_size % self.batch_size != 0:
+            sample_indices += range_total[self.num_total_batch_idx:]
+
+        return iter(sample_indices)
+
+    def __len__(self) -> int:
+        return self.total_size
 
 class RandomBatchSampler(Sampler):
     def __init__(
@@ -498,11 +546,17 @@ def main():
 
     # create total batch size level random sampler for train_dataloader
     # Random sampling in units of total batch size.
-    train_batchsampler = RandomBatchSampler(
-            train_dataset, 
+    # train_batchsampler = RandomBatchSampler(
+    #         train_dataset, 
+    #         batch_size=args.per_device_train_batch_size,
+    #         num_processes=accelerator.num_processes, 
+    #     )
+    train_sampler = RandomTotalBSZSampler(
+        train_dataset, 
             batch_size=args.per_device_train_batch_size,
             num_processes=accelerator.num_processes, 
-        )
+    )
+    train_batchsampler = BatchSampler(train_sampler, batch_size=args.per_device_train_batch_size, drop_last=False)
 
     # DataLoaders creation:
     train_dataloader = DataLoader(
@@ -626,6 +680,7 @@ def main():
     # update the progress_bar if load from checkpoint
     progress_bar.update(starting_epoch * num_update_steps_per_epoch)
     completed_steps = starting_epoch * num_update_steps_per_epoch
+    perplexity=0
 
     for epoch in range(starting_epoch, args.num_train_epochs):
         model.train()
@@ -671,6 +726,13 @@ def main():
 
             if completed_steps >= args.max_train_steps:
                 break
+        
+        if isinstance(checkpointing_steps, int):
+            if accelerator.sync_gradients:
+                output_dir = f"step_{completed_steps }"
+                if args.output_dir is not None:
+                    output_dir = os.path.join(args.output_dir, output_dir)
+                accelerator.save_state(output_dir)
 
         model.eval()
         losses = []

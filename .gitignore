@@ -11,15 +11,25 @@ saved_data
 small_model
 test_dataset.py
 test_data.py
-downstreams/ke-t5-small-summarization_lre-3
-downstreams/ke-t5-small-translation_lre-3
-downstreams/long-ke-t5-small-summarization_lre-3
-downstreams/long-ke-t5-small-translation_lre-3
-downstreams/datasets
+downstream/ke-t5-small-summarization_lre-3
+downstream/ke-t5-small-translation_lre-3
+downstream/long-ke-t5-small-summarization_lre-3
+downstream/long-ke-t5-small-translation_lre-3
+downstream/datasets
+downstream/test
+downstream/test2
+downstream/models/tok
+downstream/models/tok_bert
+downstream/.lock
 saved_data_cnt
 saved_data_sorted
 test_sampler.py
 push_to_hf_hub.py
+run_training_total_bsz_sampling2.sh
+vocab
+custom_data_collator.py
+
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -118,7 +118,7 @@ def parse_args():
     parser.add_argument(
         "--hf_cache_dir",
         type=str,
-        default="huggingface_datasets",
+        default=None,
         help="The path to cache directory for huggingface datasets.",
     )
     parser.add_argument(

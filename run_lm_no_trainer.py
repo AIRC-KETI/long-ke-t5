@@ -669,8 +669,7 @@ def main():
     # update the progress_bar if load from checkpoint
     progress_bar.update(starting_epoch * num_update_steps_per_epoch)
     completed_steps = starting_epoch * num_update_steps_per_epoch
-
-    max_size = 0
+    perplexity = 0
 
     for epoch in range(starting_epoch, args.num_train_epochs):
         model.train()
@@ -716,6 +715,12 @@ def main():
 
             if completed_steps >= args.max_train_steps:
                 break
+        
+        if accelerator.sync_gradients:
+            output_dir = f"step_{completed_steps }"
+            if args.output_dir is not None:
+                output_dir = os.path.join(args.output_dir, output_dir)
+            accelerator.save_state(output_dir)
 
         model.eval()
         losses = []
