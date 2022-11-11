@@ -612,9 +612,7 @@ def main():
             experiment_config["lr_scheduler_type"] = experiment_config["lr_scheduler_type"].value
             accelerator.init_trackers("translation_no_trainer", experiment_config)
 
-    # metric = evaluate.load("sacrebleu")
-    metric_dict = {k:evaluate.load(k) for k in ["sacrebleu", "bleu", "rouge"]}
-    eval_metric = None
+    metric = evaluate.combine(["blue", "rouge"])
     generated_samples = []
 
     def postprocess_text(preds, labels):
@@ -764,19 +762,15 @@ def main():
                             } for x, y, z in zip(decoded_inputs, decoded_preds, decoded_labels)]
                         )
 
-                    #metric.add_batch(predictions=decoded_preds, references=decoded_labels)
-                    for metric in metric_dict.values():
-                        metric.add_batch(predictions=decoded_preds, references=decoded_labels)
-
-            #eval_metric = metric.compute()
-            eval_metric = {k:v.compute() for k, v in metric_dict.items()}
+                    metric.add_batch(predictions=decoded_preds, references=decoded_labels)
+            
+            eval_metric = metric.compute()
             logger.info({
-                "bleu": eval_metric["bleu"]["bleu"]*100,
-                "sacrebleu": eval_metric["sacrebleu"]["score"],
-                "eval_rouge1": eval_metric["rouge"]["rouge1"]*100,
-                "eval_rouge2": eval_metric["rouge"]["rouge2"]*100,
-                "eval_rougeL": eval_metric["rouge"]["rougeL"]*100,
-                "eval_rougeLsum": eval_metric["rouge"]["rougeLsum"]*100,
+                "bleu": eval_metric["bleu"]*100,
+                "eval_rouge1": eval_metric["rouge1"]*100,
+                "eval_rouge2": eval_metric["rouge2"]*100,
+                "eval_rougeL": eval_metric["rougeL"]*100,
+                "eval_rougeLsum": eval_metric["rougeLsum"]*100,
 
             })
 
@@ -784,12 +778,11 @@ def main():
                 logger.info({"loss": total_loss.item() / len(train_dataloader)})
                 accelerator.log(
                     {
-                        "bleu": eval_metric["bleu"]["bleu"]*100,
-                        "sacrebleu": eval_metric["sacrebleu"]["score"],
-                        "eval_rouge1": eval_metric["rouge"]["rouge1"]*100,
-                        "eval_rouge2": eval_metric["rouge"]["rouge2"]*100,
-                        "eval_rougeL": eval_metric["rouge"]["rougeL"]*100,
-                        "eval_rougeLsum": eval_metric["rouge"]["rougeLsum"]*100,
+                        "bleu": eval_metric["bleu"]*100,
+                        "eval_rouge1": eval_metric["rouge1"]*100,
+                        "eval_rouge2": eval_metric["rouge2"]*100,
+                        "eval_rougeL": eval_metric["rougeL"]*100,
+                        "eval_rougeLsum": eval_metric["rougeLsum"]*100,
                         "train_loss": total_loss.item() / len(train_dataloader),
                         "epoch": epoch,
                         "step": completed_steps,
@@ -829,12 +822,11 @@ def main():
         if eval_metric is not None:
             with open(os.path.join(args.output_dir, "all_results.json"), "w") as f:
                 json.dump({
-                    "bleu": eval_metric["bleu"]["bleu"]*100,
-                    "sacrebleu": eval_metric["sacrebleu"]["score"],
-                    "eval_rouge1": eval_metric["rouge"]["rouge1"]*100,
-                    "eval_rouge2": eval_metric["rouge"]["rouge2"]*100,
-                    "eval_rougeL": eval_metric["rouge"]["rougeL"]*100,
-                    "eval_rougeLsum": eval_metric["rouge"]["rougeLsum"]*100,
+                    "bleu": eval_metric["bleu"]*100,
+                    "eval_rouge1": eval_metric["rouge1"]*100,
+                    "eval_rouge2": eval_metric["rouge2"]*100,
+                    "eval_rougeL": eval_metric["rougeL"]*100,
+                    "eval_rougeLsum": eval_metric["rougeLsum"]*100,
                 }, f)
         
         if args.save_samples and len(generated_samples) > 0:
