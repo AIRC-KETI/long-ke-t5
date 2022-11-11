@@ -28,7 +28,7 @@ push_to_hf_hub.py
 run_training_total_bsz_sampling2.sh
 vocab
 custom_data_collator.py
-
+ckpt_hf
 
 
 # Byte-compiled / optimized / DLL files
