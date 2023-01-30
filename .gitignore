@@ -29,6 +29,25 @@ run_training_total_bsz_sampling2.sh
 vocab
 custom_data_collator.py
 ckpt_hf
+downstream/dataset_cnt_stat
+downstream/ke-t5-small-korquad_v2_lre-3
+downstream/ke-t5-small-translation_lre-3_10e
+downstream/long-ke-t5-small-2-qa_lre-3
+downstream/long-ke-t5-small-2-summarization_lre-3
+downstream/long-ke-t5-small-2-translation_lre-3
+downstream/long-ke-t5-small-b-korquad_v2_lre-3
+downstream/long-ke-t5-small-b-summarization_lre-3
+downstream/long-ke-t5-small-b-translation_lre-3
+downstream/long-ke-t5-small-korquad_v2_lre-3
+downstream/long-ke-t5-small-qa_lre-3
+downstream/long-ke-t5-small2-summarization_lre-3
+downstream/long-ke-t5-small2-translation_lre-3
+vocab_test.py
+downstream/ke-t5-small-seq_cls_lre-3
+downstream/long-ke-t5-base-qa_lre-3
+downstream/long-ke-t5-base-summarization_lre-3
+downstream/long-ke-t5-base-translation_lre-3
+downstream/long-ke-t5-small-2-seq_cls_lre-3
 
 
 # Byte-compiled / optimized / DLL files

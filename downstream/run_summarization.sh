@@ -1,15 +1,23 @@
 
-
-MODEL_NAME_OR_PATH="KETI-AIR/ke-t5-small"
-OUTPUT_DIR="ke-t5-small-summarization_lre-3"
 HF_CACHE_DIR="../huggingface_datasets"
 MAX_SOURCE_LEN=512
 MAX_TARGET_LEN=512
 NUM_BEAMS=4
+LR=0.001
+
+MODEL_NAME_OR_PATH="kimsan0622/long-ke-t5-small-2"
+OUTPUT_DIR="long-ke-t5-small-2-summarization_lre-3"
 PER_DEV_TRAIN_BATCH_SIZE=4
 PER_DEV_EVAL_BATCH_SIZE=4
 GRADIENT_ACCUMULATION_STEPS=2
-LR=0.001
+
+
+OUTPUT_DIR="long-ke-t5-base-summarization_lre-3"
+MODEL_NAME_OR_PATH="kimsan0622/long-ke-t5-base"
+PER_DEV_TRAIN_BATCH_SIZE=1
+PER_DEV_EVAL_BATCH_SIZE=1
+GRADIENT_ACCUMULATION_STEPS=8
+
 
 DATASET_NAME=cnn_dailymail
 DATASET_CONFIG_NAME="3.0.0"

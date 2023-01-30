@@ -32,12 +32,13 @@ import torch
 from datasets import load_dataset
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
+from datetime import timedelta
 
 import evaluate
 import transformers
 from accelerate import Accelerator
 from accelerate.logging import get_logger
-from accelerate.utils import set_seed
+from accelerate.utils import set_seed, InitProcessGroupKwargs, DistributedDataParallelKwargs
 from huggingface_hub import Repository
 from transformers import (
     CONFIG_MAPPING,
@@ -126,6 +127,12 @@ def parse_args():
         type=str,
         default=None,
         help="The path to data directory for huggingface datasets.",
+    )
+    parser.add_argument(
+        "--validation_split",
+        type=str,
+        default=None,
+        help="The name of validation split.",
     )
     parser.add_argument(
         "--train_file", type=str, default=None, help="A csv or a json file containing the training data."
@@ -361,12 +368,17 @@ def main():
     # If we're using tracking, we also need to initialize it here and it will by default pick up all supported trackers
     # in the environment
     accelerator_log_kwargs = {}
-
+    
     if args.with_tracking:
         accelerator_log_kwargs["log_with"] = args.report_to
         accelerator_log_kwargs["logging_dir"] = args.output_dir
 
-    accelerator = Accelerator(gradient_accumulation_steps=args.gradient_accumulation_steps, **accelerator_log_kwargs)
+    kwargs_handlers = [
+            InitProcessGroupKwargs(timeout=timedelta(days=10))
+        ]
+
+    accelerator = Accelerator(gradient_accumulation_steps=args.gradient_accumulation_steps,
+            kwargs_handlers=kwargs_handlers, **accelerator_log_kwargs)
 
     # Make one log on every process with the configuration for debugging.
     logging.basicConfig(
@@ -431,6 +443,13 @@ def main():
             data_files["test"] = args.test_file
         extension = args.train_file.split(".")[-1]
         raw_datasets = load_dataset(extension, data_files=data_files, field="data")
+    
+    if args.validation_split is not None:
+        if args.validation_split not in raw_datasets:
+            raise ValueError(f"There is no {args.validation_split} split in raw_datasets")
+        else:
+            raw_datasets["validation"] = raw_datasets[args.validation_split]
+    
     # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
     # https://huggingface.co/docs/datasets/loading_datasets.html.
 

@@ -1,17 +1,26 @@
-MODEL_NAME_OR_PATH="../small_model"
-OUTPUT_DIR="long-ke-t5-small-translation_lre-3"
+
 HF_CACHE_DIR="../huggingface_datasets"
 HF_DATA_DIR="../data/downstreams"
 MAX_SOURCE_LEN=512
 MAX_TARGET_LEN=512
 NUM_BEAMS=4
 PREPROCESSING_NUM_WORKERS=128
-PER_DEV_TRAIN_BATCH_SIZE=32
-PER_DEV_EVAL_BATCH_SIZE=32
-GRADIENT_ACCUMULATION_STEPS=2
 LR=0.001
 SCHEDULER_TYPE="linear"
 EPOCHS=3
+
+
+MODEL_NAME_OR_PATH="kimsan0622/long-ke-t5-small-2"
+OUTPUT_DIR="long-ke-t5-small-2-translation_lre-3"
+PER_DEV_TRAIN_BATCH_SIZE=32
+PER_DEV_EVAL_BATCH_SIZE=32
+GRADIENT_ACCUMULATION_STEPS=2
+
+OUTPUT_DIR="long-ke-t5-base-translation_lre-3"
+MODEL_NAME_OR_PATH="kimsan0622/long-ke-t5-base"
+PER_DEV_TRAIN_BATCH_SIZE=8
+PER_DEV_EVAL_BATCH_SIZE=8
+GRADIENT_ACCUMULATION_STEPS=8
 
 
 # ko2en
@@ -27,7 +36,7 @@ accelerate launch run_translation_no_trainer.py \
 --hf_cache_dir ${HF_CACHE_DIR} \
 --hf_data_dir ${HF_DATA_DIR} \
 --source_lang ${SOURCE_LANG} \
---target_lang ${SOURCE_LANG} \
+--target_lang ${TARGET_LANG} \
 --source_prefix ${SOURCE_PREFIX} \
 --max_source_length ${MAX_SOURCE_LEN} \
 --max_target_length ${MAX_TARGET_LEN} \
@@ -49,7 +58,7 @@ accelerate launch run_translation_no_trainer.py \
 --hf_cache_dir ${HF_CACHE_DIR} \
 --hf_data_dir ${HF_DATA_DIR} \
 --source_lang ${SOURCE_LANG} \
---target_lang ${SOURCE_LANG} \
+--target_lang ${TARGET_LANG} \
 --source_prefix ${SOURCE_PREFIX} \
 --max_source_length ${MAX_SOURCE_LEN} \
 --max_target_length ${MAX_TARGET_LEN} \
@@ -71,7 +80,7 @@ accelerate launch run_translation_no_trainer.py \
 --hf_cache_dir ${HF_CACHE_DIR} \
 --hf_data_dir ${HF_DATA_DIR} \
 --source_lang ${SOURCE_LANG} \
---target_lang ${SOURCE_LANG} \
+--target_lang ${TARGET_LANG} \
 --source_prefix ${SOURCE_PREFIX} \
 --max_source_length ${MAX_SOURCE_LEN} \
 --max_target_length ${MAX_TARGET_LEN} \
@@ -93,7 +102,7 @@ accelerate launch run_translation_no_trainer.py \
 --hf_cache_dir ${HF_CACHE_DIR} \
 --hf_data_dir ${HF_DATA_DIR} \
 --source_lang ${SOURCE_LANG} \
---target_lang ${SOURCE_LANG} \
+--target_lang ${TARGET_LANG} \
 --source_prefix ${SOURCE_PREFIX} \
 --max_source_length ${MAX_SOURCE_LEN} \
 --max_target_length ${MAX_TARGET_LEN} \
@@ -115,7 +124,7 @@ accelerate launch run_translation_no_trainer.py \
 --hf_cache_dir ${HF_CACHE_DIR} \
 --hf_data_dir ${HF_DATA_DIR} \
 --source_lang ${SOURCE_LANG} \
---target_lang ${SOURCE_LANG} \
+--target_lang ${TARGET_LANG} \
 --source_prefix ${SOURCE_PREFIX} \
 --max_source_length ${MAX_SOURCE_LEN} \
 --max_target_length ${MAX_TARGET_LEN} \
@@ -143,7 +152,7 @@ accelerate launch run_translation_no_trainer.py \
 --hf_cache_dir ${HF_CACHE_DIR} \
 --hf_data_dir ${HF_DATA_DIR} \
 --source_lang ${SOURCE_LANG} \
---target_lang ${SOURCE_LANG} \
+--target_lang ${TARGET_LANG} \
 --source_prefix ${SOURCE_PREFIX} \
 --max_source_length ${MAX_SOURCE_LEN} \
 --max_target_length ${MAX_TARGET_LEN} \
@@ -165,7 +174,7 @@ accelerate launch run_translation_no_trainer.py \
 --hf_cache_dir ${HF_CACHE_DIR} \
 --hf_data_dir ${HF_DATA_DIR} \
 --source_lang ${SOURCE_LANG} \
---target_lang ${SOURCE_LANG} \
+--target_lang ${TARGET_LANG} \
 --source_prefix ${SOURCE_PREFIX} \
 --max_source_length ${MAX_SOURCE_LEN} \
 --max_target_length ${MAX_TARGET_LEN} \
@@ -187,7 +196,7 @@ accelerate launch run_translation_no_trainer.py \
 --hf_cache_dir ${HF_CACHE_DIR} \
 --hf_data_dir ${HF_DATA_DIR} \
 --source_lang ${SOURCE_LANG} \
---target_lang ${SOURCE_LANG} \
+--target_lang ${TARGET_LANG} \
 --source_prefix ${SOURCE_PREFIX} \
 --max_source_length ${MAX_SOURCE_LEN} \
 --max_target_length ${MAX_TARGET_LEN} \
@@ -209,7 +218,7 @@ accelerate launch run_translation_no_trainer.py \
 --hf_cache_dir ${HF_CACHE_DIR} \
 --hf_data_dir ${HF_DATA_DIR} \
 --source_lang ${SOURCE_LANG} \
---target_lang ${SOURCE_LANG} \
+--target_lang ${TARGET_LANG} \
 --source_prefix ${SOURCE_PREFIX} \
 --max_source_length ${MAX_SOURCE_LEN} \
 --max_target_length ${MAX_TARGET_LEN} \
@@ -231,7 +240,7 @@ accelerate launch run_translation_no_trainer.py \
 --hf_cache_dir ${HF_CACHE_DIR} \
 --hf_data_dir ${HF_DATA_DIR} \
 --source_lang ${SOURCE_LANG} \
---target_lang ${SOURCE_LANG} \
+--target_lang ${TARGET_LANG} \
 --source_prefix ${SOURCE_PREFIX} \
 --max_source_length ${MAX_SOURCE_LEN} \
 --max_target_length ${MAX_TARGET_LEN} \
