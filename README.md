@@ -424,9 +424,9 @@ print(tokenizer.decode(gen_seq[0], skip_special_tokens=True))
 ```
 @misc{ke_t5,
     author       = {KETI AIRC},
-    title        = {KE-T5: Korean English T5},
-    month        = mar,
-    year         = 2021,
+    title        = {Long-KE-T5: Long Korean English T5},
+    month        = may,
+    year         = 2023,
     url          = {https://github.com/AIRC-KETI/ke-t5}
 }
 ```
