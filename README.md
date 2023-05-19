@@ -17,6 +17,27 @@
 | ko | 36,052,644 |
 | en | 38,168,031 |
 
+<table>
+<tr>
+<td>한국어 문서 분포</td>
+<td>영어 문서 분포</td>
+</tr>
+
+<tr>
+<td>
+<img height="400" width="400"
+            src="https://github.com/AIRC-KETI/long-ke-t5/blob/main/images/ko_doc_dist.png?raw=true"
+            alt="score: 183.50">
+</td>
+<td>
+<img height="400" width="400"
+            src="https://github.com/AIRC-KETI/long-ke-t5/blob/main/images/en_doc_dist.png?raw=true"
+            alt="score: 183.50">
+</td>
+</tr>
+
+
+</table>
 
 ## 사전학습 모델
 
