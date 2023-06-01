@@ -424,12 +424,12 @@ print(tokenizer.decode(gen_seq[0], skip_special_tokens=True))
 ## bibtex
 
 ```
-@misc{ke_t5,
+@misc{long_ke_t5,
     author       = {KETI AIRC},
     title        = {Long-KE-T5: Long Korean English T5},
     month        = may,
     year         = 2023,
-    url          = {https://github.com/AIRC-KETI/ke-t5}
+    url          = {https://github.com/AIRC-KETI/long-ke-t5}
 }
 ```
 
