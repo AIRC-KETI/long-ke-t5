@@ -51,10 +51,14 @@
 
 ## Downstream 모델
 
-| model name | Huggingface |
-| --- | --- |
-| translation | `KETI-AIR-Downstream/long-ke-t5-base-translation-aihub-bidirection` |
-| summarization | `KETI-AIR-Downstream/long-ke-t5-base-summarization` |
+| model name | Huggingface | prefix | description |
+| --- | --- | --- |
+| translation | `KETI-AIR-Downstream/long-ke-t5-base-translation-aihub-bidirection` | `translate_en2ko: ` or `translate_ko2en` | AI hub translation dataset을 활용한 모델 (1 line) |
+| translation | `KETI-AIR-Downstream/long-ke-t5-base-translation-aihub-ko2en` | `translate_ko2en` | Korean2English (1 line) |
+| translation | `KETI-AIR-Downstream/long-ke-t5-base-translation-aihub-en2ko` | `translate_en2ko: ` | English2Korean (1 line) |
+| translation | `KETI-AIR-Downstream/long-ke-t5-base-translation-aihub-bidirection_e1` | `translate_en2ko: ` or `translate_ko2en` | AI hub translation dataset의 여러 병렬 코퍼스를 이어붙여 학습한 모델 (N line) |
+| summarization | `KETI-AIR-Downstream/long-ke-t5-base-summarization` | `summarization-num_lines-{N}: `| AI hub summarization dataset을 학습한 모델 |
+| summarization | `KETI-AIR-Downstream/long-ke-t5-base-summarization_e10` | `summarization-num_lines-{N}: `| AI hub summarization dataset을 학습한 모델 |
 
 
 ### Translation 모델 사용 예시
